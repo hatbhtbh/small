@@ -42,12 +42,14 @@ jobs:
           cp -r upstream-openclash/luci-app-openclash ./luci-app-openclash
           cp -r upstream-passwall/luci-app-passwall ./luci-app-passwall
 
+      # Commit 和 Push 改动
       - name: Commit and Push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git add luci-app-openclash luci-app-passwall
-          if git commit -m "Sync luci-app-openclash and luci-app-passwall from upstream"; then
+          # 只在有改动时 commit 和 push
+          git diff --cached --quiet || (
+            git commit -m "Sync luci-app-openclash and luci-app-passwall from upstream"
             git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
-          else
-            echo "No changes to commit"
+          )
