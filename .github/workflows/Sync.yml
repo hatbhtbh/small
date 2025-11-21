@@ -48,18 +48,17 @@ jobs:
           cp -r upstream-passwall/luci-app-passwall ./luci-app-passwall
           echo "Directories copied successfully."
 
-      # 提交并推送更改（带日志）
+      # 提交并推送更改（安全写法 + 日志输出）
       - name: Commit and Push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Checking for changes..."
           git add luci-app-openclash luci-app-passwall
-          git diff --cached --quiet
-          if [ $? -eq 0 ]; then
-            echo "No changes detected. Nothing to commit."
-          else
+          # 只有有改动才 commit 和 push
+          git diff --cached --quiet || (
             echo "Changes detected. Committing and pushing..."
             git commit -m "Sync luci-app-openclash and luci-app-passwall from upstream"
             git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
             echo "Commit and push completed."
+          )
