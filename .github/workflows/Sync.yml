@@ -2,8 +2,8 @@ name: Sync luci-app-openclash and luci-app-passwall
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # 每天 0 点运行
-  workflow_dispatch:      # 允许手动触发
+    - cron: "0 0 * * *"   # 每天 0 点运行
+  workflow_dispatch:       # 允许手动触发
 
 jobs:
   sync:
@@ -22,34 +22,44 @@ jobs:
       # 同步 luci-app-openclash
       - name: Initialize sparse-checkout for luci-app-openclash
         run: |
+          echo "Syncing luci-app-openclash..."
           rm -rf upstream-openclash
           git clone --depth=1 --filter=blob:none --sparse https://github.com/vernesong/OpenClash.git upstream-openclash
           cd upstream-openclash
           git sparse-checkout set luci-app-openclash
+          echo "luci-app-openclash ready."
 
       # 同步 luci-app-passwall
       - name: Initialize sparse-checkout for luci-app-passwall
         run: |
+          echo "Syncing luci-app-passwall..."
           rm -rf upstream-passwall
           git clone --depth=1 --filter=blob:none --sparse https://github.com/xiaorouji/openwrt-passwall.git upstream-passwall
           cd upstream-passwall
           git sparse-checkout set luci-app-passwall
+          echo "luci-app-passwall ready."
 
-      # 删除旧目录并同步目录
+      # 删除旧目录并同步新的目录
       - name: Copy target directories
         run: |
+          echo "Copying directories..."
           rm -rf luci-app-openclash luci-app-passwall
           cp -r upstream-openclash/luci-app-openclash ./luci-app-openclash
           cp -r upstream-passwall/luci-app-passwall ./luci-app-passwall
+          echo "Directories copied successfully."
 
-      # Commit 和 Push 改动
+      # 提交并推送更改（带日志）
       - name: Commit and Push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "Checking for changes..."
           git add luci-app-openclash luci-app-passwall
-          # 只在有改动时 commit 和 push
-          git diff --cached --quiet || (
+          git diff --cached --quiet
+          if [ $? -eq 0 ]; then
+            echo "No changes detected. Nothing to commit."
+          else
+            echo "Changes detected. Committing and pushing..."
             git commit -m "Sync luci-app-openclash and luci-app-passwall from upstream"
             git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
-          )
+            echo "Commit and push completed."
