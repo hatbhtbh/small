@@ -24,7 +24,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: vernesong/OpenClash
-          ref: master
           path: upstream-openclash
           fetch-depth: 1
 
@@ -32,7 +31,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: xiaorouji/openwrt-passwall
-          ref: master
           path: upstream-passwall
           fetch-depth: 1
 
