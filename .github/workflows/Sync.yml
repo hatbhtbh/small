@@ -2,7 +2,7 @@ name: Sync luci-app-openclash and luci-app-passwall
 
 on:
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 16 * * *"   # 北京时间 0 点
   workflow_dispatch:
 
 jobs:
@@ -10,43 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout current repo
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-
-      - name: Fix git auth for public clone
-        run: |
-          git config --global --unset-all http.https://github.com/.extraheader || true
 
       - name: Configure Git
         run: |
           git config --global user.name "hatbhtbh"
           git config --global user.email "hatbhtbh@gmail.com"
 
-      - name: Sync luci-app-openclash
-        run: |
-          rm -rf upstream-openclash
-          git clone --depth=1 --filter=blob:none --sparse \
-            https://github.com/vernesong/OpenClash.git upstream-openclash
+      - name: Checkout OpenClash upstream
+        uses: actions/checkout@v4
+        with:
+          repository: vernesong/OpenClash
+          ref: master
+          path: upstream-openclash
+          fetch-depth: 1
 
-          (
-            cd upstream-openclash
-            git sparse-checkout init --cone
-            git sparse-checkout set luci-app-openclash
-          )
-
-      - name: Sync luci-app-passwall
-        run: |
-          rm -rf upstream-passwall
-          git clone --depth=1 --filter=blob:none --sparse \
-            https://github.com/xiaorouji/openwrt-passwall.git upstream-passwall
-
-          (
-            cd upstream-passwall
-            git sparse-checkout init --cone
-            git sparse-checkout set luci-app-passwall
-          )
+      - name: Checkout Passwall upstream
+        uses: actions/checkout@v4
+        with:
+          repository: xiaorouji/openwrt-passwall
+          ref: master
+          path: upstream-passwall
+          fetch-depth: 1
 
       - name: Copy target directories
         run: |
@@ -61,7 +49,7 @@ jobs:
           git add luci-app-openclash luci-app-passwall
 
           if git diff --cached --quiet; then
-            echo "No changes detected"
+            echo "No changes detected, skip commit"
             exit 0
           fi
 
