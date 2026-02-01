@@ -2,7 +2,7 @@ name: Sync luci-app-openclash and luci-app-passwall
 
 on:
   schedule:
-    - cron: "0 16 * * *"   # 北京时间 0 点（UTC+8）
+    - cron: "0 16 * * *"   # 每天 0 点北京时间（UTC+8）
   workflow_dispatch:
 
 jobs:
@@ -17,13 +17,13 @@ jobs:
           persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Git 基本信息
+      # 2. 配置 Git 用户信息
       - name: Configure Git
         run: |
           git config --global user.name "hatbhtbh"
           git config --global user.email "hatbhtbh@gmail.com"
 
-      # 3. 检出 OpenClash（明确指定 master，避免默认分支探测）
+      # 3. 检出 OpenClash upstream 仓库
       - name: Checkout OpenClash upstream
         uses: actions/checkout@v4
         with:
@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 4. 检出 Passwall（关键点：明确指定 main）
+      # 4. 检出 Passwall upstream 仓库（关键点：明确 ref 为 main，并去掉多余 /）
       - name: Checkout Passwall upstream
         uses: actions/checkout@v4
         with:
@@ -43,14 +43,14 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. 复制需要的插件目录
+      # 5. 复制插件目录
       - name: Copy target directories
         run: |
           rm -rf luci-app-openclash luci-app-passwall
           cp -r upstream-openclash/luci-app-openclash ./luci-app-openclash
           cp -r upstream-passwall/luci-app-passwall ./luci-app-passwall
 
-      # 6. 提交并推送（无变更则自动跳过）
+      # 6. 提交并推送，如果没有变化则跳过
       - name: Commit and Push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
