@@ -144,7 +144,7 @@ end
 
 -- Shunt Start
 if (has_singbox or has_xray) and #nodes_table > 0 then
-	if #normal_list > 0 then
+	if #normal_list > 0 or #iface_list > 0 then
 		current_node_id = m.uci:get(appname, global_cfgid, "tcp_node")
 		current_node = current_node_id and m.uci:get_all(appname, current_node_id) or {}
 		if current_node.protocol == "_shunt" then
@@ -163,7 +163,7 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 			})
 		end
 	else
-		local tips = s:taboption("Main", DummyValue, "tips", " ")
+		local tips = s:taboption("Main", DummyValue, "tips", "　")
 		tips.rawhtml = true
 		tips.cfgvalue = function(t, n)
 			return string.format('<a style="color: red">%s</a>', translate("There are no available nodes, please add or subscribe nodes first."))
@@ -486,7 +486,7 @@ o.validate = function(self, value, t)
 		end
 		local _tcp_node = s.fields["tcp_node"]:formvalue(t)
 		if _dns_mode and _tcp_node then
-			if m:get(_tcp_node, "type"):lower() ~= _dns_mode then
+			if (m:get(_tcp_node, "type") or ""):lower() ~= _dns_mode then
 				return nil, translatef("TCP node must be '%s' type to use FakeDNS.", _dns_mode)
 			end
 		end
@@ -523,8 +523,7 @@ if api.is_finded("smartdns") then
 end
 
 o = s:taboption("DNS", Flag, "force_https_soa", translate("Force HTTPS SOA"), translate("Force queries with qtype 65 to respond with an SOA record."))
-o.default = "1"
-o.rmempty = false
+o.default = "0"
 o:depends({dns_shunt = "chinadns-ng"})
 if api.is_finded("smartdns") then
 	o:depends({dns_shunt = "smartdns"})
@@ -534,12 +533,12 @@ o = s:taboption("DNS", Flag, "dns_redirect", translate("DNS Redirect"), translat
 o.default = "1"
 o.rmempty = false
 
-local use_nft = m:get("@global_forwarding[0]", "use_nft") == "1"
-local set_title = api.i18n.translate(use_nft and "Clear NFTSET on Reboot" or "Clear IPSET on Reboot")
+local prefer_nft = m:get("@global_forwarding[0]", "prefer_nft") == "1"
+local set_title = api.i18n.translate(prefer_nft and "Clear NFTSET on Reboot" or "Clear IPSET on Reboot")
 o = s:taboption("DNS", Flag, "flush_set_on_reboot", set_title, translate("Clear IPSET/NFTSET on service reboot. This may increase reboot time."))
 o.default = "0"
 
-set_title = api.i18n.translate(use_nft and "Clear NFTSET" or "Clear IPSET")
+set_title = api.i18n.translate(prefer_nft and "Clear NFTSET" or "Clear IPSET")
 o = s:taboption("DNS", DummyValue, "clear_ipset", set_title, translate("Try this feature if the rule modification does not take effect."))
 o.rawhtml = true
 function o.cfgvalue(self, section)
@@ -796,7 +795,7 @@ for k, v in pairs(socks_list) do
 	udp.group[#udp.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 end
 for k, v in pairs(nodes_table) do
-	if #normal_list == 0 then
+	if #normal_list == 0 and #iface_list == 0 then
 		break
 	end
 	if v.protocol == "_shunt" then
